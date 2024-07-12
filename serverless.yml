@@ -1,4 +1,4 @@
-service: webhook-service
+service: go-serverless-template
 
 plugins:
   - serverless-localstack
