@@ -1,9 +1,4 @@
 node_modules
 .serverless
-temp
-docker/volumes/**/*
-bootstrap
-bin/hello
-bin/hello-secondary
-bin/hello-secondary.zip
-bin/hello.zip
+**/volumes/**/*
+.bin/**
