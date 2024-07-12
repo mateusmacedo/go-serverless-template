@@ -22,8 +22,12 @@ provider:
   name: aws
   region: 'us-east-1'
   stage: ${opt:stage, 'local'}
+  apiName: custom-api-name
   environment:
     APP_ENV: ${opt:stage, self:provider.stage}
+  memorySize: 128
+  apiGateway:
+    shouldStartNameWithService: true
 
 functions:
   hello:
