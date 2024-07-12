@@ -2,6 +2,7 @@ service: webhook-service
 
 plugins:
   - serverless-localstack
+  - serverless-go-plugin
 
 custom:
   localstack:
@@ -12,9 +13,11 @@ custom:
       compose_file: docker/compose.yaml
     lambda:
       mount_code: true
-    networks:
-      - host
-      - docker_default
+    debug: true
+  go:
+    supportedRuntimes: ["provided.al2"]
+    buildProvidedRuntimeAsBootstrap: true
+    binDir: bin
 
 provider:
   name: aws
@@ -25,14 +28,8 @@ provider:
 
 functions:
   hello:
-    handler: hello
+    handler: cmd/hello/main.go
     runtime: provided.al2
-    package:
-      individually: true
-      exclude:
-        - ./**
-      include:
-        - ./bootstrap
     events:
       - http:
           path: hello/{name}
@@ -44,14 +41,8 @@ functions:
                 name: true
 
   hello-secondary:
-    handler: hello-secondary
+    handler: cmd/hello-secondary/main.go
     runtime: provided.al2
-    package:
-      individually: true
-      exclude:
-        - ./**
-      include:
-        - ./bootstrap
     events:
       - http:
           path: hello-secondary/{name}
