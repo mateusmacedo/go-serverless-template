@@ -10,7 +10,7 @@ import (
 
 func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	name := request.PathParameters["name"]
-	message := fmt.Sprintf(" { \"Message\" : \"Hello Secondary %s \" } ", name)
+	message := fmt.Sprintf(" { \"Message\" : \"Hello Secondary %s\" } ", name)
 	return events.APIGatewayProxyResponse{Body: message, StatusCode: 200}, nil
 }
 
