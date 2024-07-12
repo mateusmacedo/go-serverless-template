@@ -12,6 +12,8 @@ services:
       - DEBUG=${LOCALSTACK_DEBUG:-0}
       - AWS_ACCESS_KEY_ID=${LOCALSTACK_AWS_ACCESS_KEY_ID:-test}
       - AWS_SECRET_ACCESS_KEY=${LOCALSTACK_AWS_SECRET_ACCESS_KEY:-test}
+      - LAMBDA_KEEPALIVE_MS=${LOCALSTACK_LAMBDA_KEEPALIVE_MS:-10000}
+      - PERSISTENCE=${LOCALSTACK_PERSISTENCE:-0}
     volumes:
       # - "./scripts/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"  # ready hook
       - "${LOCALSTACK_VOLUME_DIR:-./volumes/localstack}:/var/lib/localstack"
