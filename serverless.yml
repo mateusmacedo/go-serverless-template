@@ -1,0 +1,63 @@
+service: webhook-service
+
+plugins:
+  - serverless-localstack
+
+custom:
+  localstack:
+    stages:
+      - local
+    autostart: true
+    docker:
+      compose_file: docker/compose.yaml
+    lambda:
+      mount_code: true
+    networks:
+      - host
+      - docker_default
+
+provider:
+  name: aws
+  region: 'us-east-1'
+  stage: ${opt:stage, 'local'}
+  environment:
+    APP_ENV: ${opt:stage, self:provider.stage}
+
+functions:
+  hello:
+    handler: hello
+    runtime: provided.al2
+    package:
+      individually: true
+      exclude:
+        - ./**
+      include:
+        - ./bootstrap
+    events:
+      - http:
+          path: hello/{name}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                name: true
+
+  hello-secondary:
+    handler: hello-secondary
+    runtime: provided.al2
+    package:
+      individually: true
+      exclude:
+        - ./**
+      include:
+        - ./bootstrap
+    events:
+      - http:
+          path: hello-secondary/{name}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                name: true
