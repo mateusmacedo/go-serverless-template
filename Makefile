@@ -1,4 +1,4 @@
-.PHONY: build clean deploy
+.PHONY: build clean deploy deploy-function up down
 
 TARGET ?= ./cmd/hello/main.go
 FUNCTION ?= hello
