@@ -7,13 +7,13 @@ func NewHello() Hello {
 }
 
 func (h *Hello) Say(input HelloInput) (HelloOutput, error) {
-	if input.Suffix == "" {
-		return HelloOutput{
-			Message: "Hello " + input.Name,
-		}, nil
-	}
+	message := h.constructMessage(input)
+	return HelloOutput{Message: message}, nil
+}
 
-	return HelloOutput{
-		Message: "Hello " + input.Name + " " + input.Suffix,
-	}, nil
+func (h *Hello) constructMessage(input HelloInput) string {
+	if input.Suffix == "" {
+		return "Hello " + input.Name
+	}
+	return "Hello " + input.Name + " " + input.Suffix
 }
