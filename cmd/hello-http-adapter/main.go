@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 
 	"go-sls-template/internal/hello/application"
-	"go-sls-template/internal/hello/infrastructure/aws"
-	"go-sls-template/pkg/infrastructure"
+	"go-sls-template/internal/hello/infrastructure"
+	"go-sls-template/pkg/infrastructure/aws"
 )
 
 func main() {
@@ -27,9 +27,9 @@ func main() {
 		log.Fatalf("AWS_SNS_HELLO_TOPIC environment variable is not set")
 	}
 
-	dispatcher := infrastructure.NewSnsDispatcher[application.DispactherHandlerInputMsg](snsClient, topicArn)
+	dispatcher := aws.NewSnsDispatcher[application.DispactherHandlerInputMsg](snsClient, topicArn)
 	handler := application.NewDispactherHandler(dispatcher)
-	adapter := aws.NewHttpAdapter(handler)
+	adapter := infrastructure.NewHttpAdapter(handler)
 
 	lambda.Start(adapter.Adapt)
 }
