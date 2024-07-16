@@ -9,22 +9,26 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	"go-sls-template/internal/handlers"
+	"go-sls-template/pkg/aws/sqs"
 )
 
 func Handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, message := range sqsEvent.Records {
-		log.Printf("Processing message ID: %s", message.MessageId)
-		log.Printf("Message body: %s", message.Body)
-
-		helloInput := &handlers.HelloInput{}
-		err := json.Unmarshal([]byte(message.Body), helloInput)
-		if err != nil {
+		body := &sqs.Body{}
+		if err := json.Unmarshal([]byte(message.Body), body); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
 		}
 
-		helloOutput := handlers.Hello(*helloInput)
-		log.Printf("Hello output: %v", helloOutput)
+		msg := &handlers.HelloInput{}
+		if err := json.Unmarshal([]byte(body.Message), msg); err != nil {
+			log.Printf("Failed to unmarshal message: %v", err)
+			return err
+		}
+
+		output := handlers.HelloPrimary(*msg)
+
+		log.Printf("Hello output: %v", output.Message)
 	}
 
 	return nil
