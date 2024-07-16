@@ -23,6 +23,16 @@ type body struct {
 	SigningCertURL   string `json:"SigningCertURL"`
 }
 
+func (b *body) Unmarshal(recordBody string) error {
+	return json.Unmarshal([]byte(recordBody), b)
+}
+
+func (b *body) ToDispatcherHandlerInputMsg() (application.DispactherHandlerInputMsg, error) {
+	var input application.DispactherHandlerInputMsg
+	err := json.Unmarshal([]byte(b.Message), &input)
+	return input, err
+}
+
 type sqsAdapter struct {
 	handler *application.HelloHandler
 }
@@ -38,13 +48,13 @@ func logAndReturnError(message string, err error) error {
 
 func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
-		var body body
-		if err := json.Unmarshal([]byte(record.Body), &body); err != nil {
+		var b body
+		if err := b.Unmarshal(record.Body); err != nil {
 			return logAndReturnError("Failed to unmarshal message body", err)
 		}
 
-		var input application.DispactherHandlerInputMsg
-		if err := json.Unmarshal([]byte(body.Message), &input); err != nil {
+		input, err := b.ToDispatcherHandlerInputMsg()
+		if err != nil {
 			return logAndReturnError("Failed to unmarshal message content", err)
 		}
 
@@ -54,7 +64,6 @@ func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		}
 
 		output := h.handler.Handle(ctx, helloHandlerMsg)
-
 		log.Printf("Output: %s", output.Message)
 	}
 
@@ -65,6 +74,5 @@ func main() {
 	service := domain.NewHello()
 	handler := application.NewHelloHandler(service)
 	adapter := newSqsAdapter(handler)
-
 	lambda.Start(adapter.adapt)
 }
