@@ -73,6 +73,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		helloHandlerMsg := application.HelloHandleInputMsg{
 			Name:   input.Message,
 			Suffix: h.name,
+			ID:     record.MessageId,
 		}
 
 		output, err := h.handler.Handle(ctx, helloHandlerMsg)
