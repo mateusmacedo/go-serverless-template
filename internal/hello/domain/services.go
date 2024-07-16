@@ -14,6 +14,6 @@ func (h *Hello) Say(input HelloInput) HelloOutput {
 	}
 
 	return HelloOutput{
-		Message: "Hello " + input.Name + " from " + input.Suffix,
+		Message: "Hello " + input.Name + " " + input.Suffix,
 	}
 }
