@@ -100,7 +100,7 @@ functions:
                 name: true
 
   hello:
-    handler: cmd/hello-sqs-adapter/main.go
+    handler: cmd/hello-primary-sqs-adapter/main.go
     runtime: provided.al2
     events:
       - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue
