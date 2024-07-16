@@ -55,3 +55,12 @@ functions:
             parameters:
               paths:
                 name: true
+
+  health-check:
+    handler: cmd/health-check/main.go
+    runtime: provided.al2
+    events:
+      - http:
+          path: health-check/
+          method: get
+          cors: true
