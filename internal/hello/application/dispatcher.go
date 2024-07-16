@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 
 	"go-sls-template/pkg/application"
 )
@@ -21,9 +22,11 @@ func NewDispactherHandler(publisher application.MessageDispatcher[DispactherHand
 }
 
 func (h DispactherHandler) Handle(ctx context.Context, msg DispactherHandlerInputMsg) error {
+	if msg.Message == "" {
+		return errors.New("message cannot be empty")
+	}
 	if err := h.dispatcher.Dispatch(ctx, msg); err != nil {
 		return err
 	}
-
 	return nil
 }
