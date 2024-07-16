@@ -23,13 +23,17 @@ type body struct {
 	SigningCertURL   string `json:"SigningCertURL"`
 }
 
-func (b *body) Unmarshal(recordBody string) error {
+func (b *body) unmarshal(recordBody string) error {
 	return json.Unmarshal([]byte(recordBody), b)
 }
 
-func (b *body) ToDispatcherHandlerInputMsg() (application.DispactherHandlerInputMsg, error) {
+func (b *body) ToDispatcherHandlerInputMsg(recordBody string) (application.DispactherHandlerInputMsg, error) {
+	err := b.unmarshal(recordBody)
+	if err != nil {
+		return application.DispactherHandlerInputMsg{}, err
+	}
 	var input application.DispactherHandlerInputMsg
-	err := json.Unmarshal([]byte(b.Message), &input)
+	err = json.Unmarshal([]byte(b.Message), &input)
 	return input, err
 }
 
@@ -49,11 +53,7 @@ func logAndReturnError(message string, err error) error {
 func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		var b body
-		if err := b.Unmarshal(record.Body); err != nil {
-			return logAndReturnError("Failed to unmarshal message body", err)
-		}
-
-		input, err := b.ToDispatcherHandlerInputMsg()
+		input, err := b.ToDispatcherHandlerInputMsg(record.Body)
 		if err != nil {
 			return logAndReturnError("Failed to unmarshal message content", err)
 		}
