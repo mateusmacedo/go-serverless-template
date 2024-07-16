@@ -6,11 +6,14 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+
+	"go-sls-template/internal/handlers"
 )
 
 func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	name := request.PathParameters["name"]
-	message := fmt.Sprintf(" { \"Message\" : \"Hello Secondary %s\" } ", name)
+	rawmessage := handlers.HelloSecondary(name)
+	message := fmt.Sprintf(" { \"Message\" : \"%s\" }", rawmessage)
 	return events.APIGatewayProxyResponse{Body: message, StatusCode: 200}, nil
 }
 
