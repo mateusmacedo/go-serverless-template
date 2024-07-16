@@ -3,15 +3,18 @@ package infrastructure
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"errors"
 
 	"github.com/aws/aws-lambda-go/events"
+	"go.uber.org/zap"
 
 	"go-sls-template/internal/hello/application"
 )
 
+var logger, _ = zap.NewProduction()
+
 func logAndReturnError(message string, err error) error {
-	log.Printf("%s: %v", message, err)
+	logger.Error(message, zap.Error(err))
 	return err
 }
 
@@ -31,13 +34,16 @@ func (b *body) unmarshal(recordBody []byte) error {
 }
 
 func (b *body) toDispatcherHandlerInputMsg(recordBody []byte) (application.DispactherHandlerInputMsg, error) {
-	err := b.unmarshal(recordBody)
-	if err != nil {
-		return application.DispactherHandlerInputMsg{}, err
+	if err := b.unmarshal(recordBody); err != nil {
+		return application.DispactherHandlerInputMsg{}, errors.New("failed to unmarshal body: " + string(recordBody))
 	}
+
 	var input application.DispactherHandlerInputMsg
-	err = json.Unmarshal([]byte(b.Message), &input)
-	return input, err
+	if err := json.Unmarshal([]byte(b.Message), &input); err != nil {
+		return application.DispactherHandlerInputMsg{}, errors.New("failed to unmarshal message content: " + b.Message)
+	}
+
+	return input, nil
 }
 
 type sqsAdapter struct {
@@ -61,7 +67,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		var b body
 		input, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
 		if err != nil {
-			return logAndReturnError("Failed to unmarshal message content: "+record.Body, err)
+			return logAndReturnError("Failed to process record", err)
 		}
 
 		helloHandlerMsg := application.HelloHandleInputMsg{
@@ -70,7 +76,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		}
 
 		output := h.handler.Handle(ctx, helloHandlerMsg)
-		log.Printf("Output: %s", output.Message)
+		logger.Info("Message processed successfully", zap.String("output", output.Message))
 	}
 
 	return nil
