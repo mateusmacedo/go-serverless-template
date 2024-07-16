@@ -6,15 +6,13 @@ import (
 	"errors"
 
 	"github.com/aws/aws-lambda-go/events"
-	"go.uber.org/zap"
 
 	"go-sls-template/internal/hello/application"
+	pkg_app "go-sls-template/pkg/application"
 )
 
-var logger, _ = zap.NewProduction()
-
-func logAndReturnError(message string, err error) error {
-	logger.Error(message, zap.Error(err))
+func logAndReturnError(logger pkg_app.Logger, message string, err error) error {
+	logger.Error(message, err)
 	return err
 }
 
@@ -49,25 +47,27 @@ func (b *body) toDispatcherHandlerInputMsg(recordBody []byte) (application.Dispa
 type sqsAdapter struct {
 	name    string
 	handler *application.HelloHandler
+	logger  pkg_app.Logger
 }
 
-func NewSqsAdapter(handler *application.HelloHandler, name string) *sqsAdapter {
+func NewSqsAdapter(handler *application.HelloHandler, name string, logger pkg_app.Logger) *sqsAdapter {
 	return &sqsAdapter{
 		name:    name,
 		handler: handler,
+		logger:  logger,
 	}
 }
 
 func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		if len(record.Body) == 0 {
-			return logAndReturnError("Record body is empty", nil)
+			return logAndReturnError(h.logger, "Record body is empty", nil)
 		}
 
 		var b body
 		input, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
 		if err != nil {
-			return logAndReturnError("Failed to process record", err)
+			return logAndReturnError(h.logger, "Failed to process record", err)
 		}
 
 		helloHandlerMsg := application.HelloHandleInputMsg{
@@ -76,7 +76,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		}
 
 		output := h.handler.Handle(ctx, helloHandlerMsg)
-		logger.Info("Message processed successfully", zap.String("output", output.Message))
+		h.logger.Info("Message processed successfully", "output", output.Message)
 	}
 
 	return nil
