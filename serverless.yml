@@ -110,12 +110,3 @@ functions:
     runtime: provided.al2
     events:
       - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
-
-  health-check:
-    handler: cmd/health-check/main.go
-    runtime: provided.al2
-    events:
-      - http:
-          path: health-check/
-          method: get
-          cors: true
