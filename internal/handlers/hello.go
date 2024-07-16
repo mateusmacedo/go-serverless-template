@@ -8,9 +8,9 @@ type HelloOutput struct {
 	Message string `json:"message"`
 }
 
-func Hello(HelloRequest HelloInput) HelloOutput {
+func HelloPrimary(HelloRequest HelloInput) HelloOutput {
 	return HelloOutput{
-		Message: "Hello " + HelloRequest.Name,
+		Message: "Hello " + HelloRequest.Name + " from primary",
 	}
 }
 
