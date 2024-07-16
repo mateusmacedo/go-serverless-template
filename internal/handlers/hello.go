@@ -8,14 +8,16 @@ type HelloOutput struct {
 	Message string `json:"message"`
 }
 
-func HelloPrimary(HelloRequest HelloInput) HelloOutput {
+func createHelloMessage(name, suffix string) HelloOutput {
 	return HelloOutput{
-		Message: "Hello " + HelloRequest.Name + " from primary",
+		Message: "Hello " + name + " from " + suffix,
 	}
 }
 
+func HelloPrimary(HelloRequest HelloInput) HelloOutput {
+	return createHelloMessage(HelloRequest.Name, "primary")
+}
+
 func HelloSecondary(HelloRequest HelloInput) HelloOutput {
-	return HelloOutput{
-		Message: "Hello " + HelloRequest.Name + " from secondary",
-	}
+	return createHelloMessage(HelloRequest.Name, "secondary")
 }
