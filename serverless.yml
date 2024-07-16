@@ -86,12 +86,12 @@ resources:
         Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
 
 functions:
-  http-hello-broadcaster:
+  hello-http:
     handler: cmd/hello-http-adapter/main.go
     runtime: provided.al2
     events:
       - http:
-          path: hello-broadcaster/{name}
+          path: hello/{name}
           method: get
           cors: true
           request:
@@ -99,7 +99,7 @@ functions:
               paths:
                 name: true
 
-  hello:
+  hello-primary:
     handler: cmd/hello-primary-sqs-adapter/main.go
     runtime: provided.al2
     events:
