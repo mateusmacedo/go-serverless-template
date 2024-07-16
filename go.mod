@@ -1,4 +1,4 @@
-module whservice
+module go-sls-template
 
 go 1.22.0
 
