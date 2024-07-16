@@ -14,24 +14,33 @@ import (
 
 func Handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, message := range sqsEvent.Records {
-		body := &sqs.Body{}
-		if err := json.Unmarshal([]byte(message.Body), body); err != nil {
-			log.Printf("Failed to unmarshal message: %v", err)
+		if err := processMessage(message); err != nil {
+			log.Printf("Failed to process message: %v", err)
 			return err
 		}
+	}
+	return nil
+}
 
-		msg := &handlers.HelloInput{}
-		if err := json.Unmarshal([]byte(body.Message), msg); err != nil {
-			log.Printf("Failed to unmarshal message: %v", err)
-			return err
-		}
-
-		output := handlers.HelloSecondary(*msg)
-
-		log.Printf("Hello output: %v", output.Message)
+func processMessage(message events.SQSMessage) error {
+	body := &sqs.Body{}
+	if err := json.Unmarshal([]byte(message.Body), body); err != nil {
+		return logAndReturnError("Failed to unmarshal message body", err)
 	}
 
+	msg := &handlers.HelloInput{}
+	if err := json.Unmarshal([]byte(body.Message), msg); err != nil {
+		return logAndReturnError("Failed to unmarshal inner message", err)
+	}
+
+	output := handlers.HelloSecondary(*msg)
+	log.Printf("Hello output: %v", output.Message)
 	return nil
+}
+
+func logAndReturnError(message string, err error) error {
+	log.Printf("%s: %v", message, err)
+	return err
 }
 
 func main() {
