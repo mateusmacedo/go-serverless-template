@@ -75,7 +75,11 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 			Suffix: h.name,
 		}
 
-		output := h.handler.Handle(ctx, helloHandlerMsg)
+		output, err := h.handler.Handle(ctx, helloHandlerMsg)
+		if err != nil {
+			return logAndReturnError(h.logger, "Failed to process message", err)
+		}
+
 		h.logger.Info("Message processed successfully", "output", output.Message)
 	}
 
