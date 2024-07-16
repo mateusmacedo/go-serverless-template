@@ -6,12 +6,12 @@ import (
 	"go-sls-template/internal/hello/domain"
 )
 
-type HandlerInputMsg struct {
+type HelloHandleInputMsg struct {
 	Name   string `json:"name"`
 	Suffix string `json:"suffix"`
 }
 
-type HandlerOutputMsg struct {
+type HelloHandleOutputMsg struct {
 	Message string `json:"message"`
 }
 
@@ -25,10 +25,10 @@ func NewHelloHandler(hello domain.Hello) *HelloHandler {
 	}
 }
 
-func (h *HelloHandler) Handle(ctx context.Context, msg HandlerInputMsg) HandlerOutputMsg {
+func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInputMsg) HelloHandleOutputMsg {
 	input := domain.HelloInput(msg)
 
 	output := h.hello.Say(input)
 
-	return HandlerOutputMsg(output)
+	return HelloHandleOutputMsg(output)
 }
