@@ -25,10 +25,13 @@ func NewHelloHandler(hello domain.Hello) *HelloHandler {
 	}
 }
 
-func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInputMsg) HelloHandleOutputMsg {
+func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInputMsg) (HelloHandleOutputMsg, error) {
 	input := domain.HelloInput(msg)
 
-	output := h.hello.Say(input)
+	output, err := h.hello.Say(input)
+	if err != nil {
+		return HelloHandleOutputMsg{}, err
+	}
+	return HelloHandleOutputMsg(output), nil
 
-	return HelloHandleOutputMsg(output)
 }
