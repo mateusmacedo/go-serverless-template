@@ -38,12 +38,12 @@ func logAndReturnError(message string, err error) error {
 
 func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
-		body := &body{}
-		if err := json.Unmarshal([]byte(record.Body), body); err != nil {
+		var body body
+		if err := json.Unmarshal([]byte(record.Body), &body); err != nil {
 			return logAndReturnError("Failed to unmarshal message body", err)
 		}
 
-		input := application.DispactherHandlerInputMsg{}
+		var input application.DispactherHandlerInputMsg
 		if err := json.Unmarshal([]byte(body.Message), &input); err != nil {
 			return logAndReturnError("Failed to unmarshal message content", err)
 		}
@@ -54,7 +54,6 @@ func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		}
 
 		output := h.handler.Handle(ctx, helloHandlerMsg)
-
 		log.Printf("Output: %s", output.Message)
 	}
 
