@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,24 +11,27 @@ import (
 	"go-sls-template/internal/hello/application"
 	"go-sls-template/internal/hello/infrastructure"
 	"go-sls-template/pkg/infrastructure/aws"
+	"go-sls-template/pkg/infrastructure/log"
 )
 
 func main() {
+	logger, _ := log.NewZapLogger()
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		logger.Error("Error loading AWS config", err)
 	}
 
 	snsClient := sns.NewFromConfig(cfg)
 
 	topicArn := os.Getenv("AWS_SNS_HELLO_TOPIC")
 	if topicArn == "" {
-		log.Fatalf("AWS_SNS_HELLO_TOPIC environment variable is not set")
+		logger.Error("AWS_SNS_HELLO_TOPIC environment variable is not set", nil)
+
 	}
 
 	dispatcher := aws.NewSnsDispatcher[application.DispactherHandlerInputMsg](snsClient, topicArn)
 	handler := application.NewDispactherHandler(dispatcher)
-	adapter := infrastructure.NewHttpAdapter(handler)
+	adapter := infrastructure.NewHttpAdapter(handler, logger)
 
 	lambda.Start(adapter.Adapt)
 }
