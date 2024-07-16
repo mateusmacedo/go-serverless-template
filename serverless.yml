@@ -38,6 +38,7 @@ provider:
     AWS_SQS_HELLO_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-dlq"
     AWS_SQS_HELLO_SECONDARY_QUEUE: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue"
     AWS_SQS_HELLO_SECONDARY_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-dlq"
+    AWS_DYNAMODB_TABLE_NAME: "${self:service}-${self:provider.stage}-hello-table"
   memorySize: 128
   apiGateway:
     shouldStartNameWithService: true
@@ -84,6 +85,23 @@ resources:
         Protocol: sqs
         TopicArn: arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic
         Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
+
+    HelloTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:service}-${self:provider.stage}-hello-table
 
 functions:
   hello-http:
