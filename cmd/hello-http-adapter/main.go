@@ -29,7 +29,7 @@ func createErrorResponse(message string, statusCode int, err error) (events.APIG
 
 func (h *httpAdapter) adapt(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	name := request.PathParameters["name"]
-	msg := application.DispactherInputMsg{
+	msg := application.DispactherHandlerInputMsg{
 		Message: name,
 	}
 
@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("AWS_SNS_HELLO_TOPIC environment variable is not set")
 	}
 
-	dispatcher := infrastructure.NewSnsDispatcher[application.DispactherInputMsg](snsClient, topicArn)
+	dispatcher := infrastructure.NewSnsDispatcher[application.DispactherHandlerInputMsg](snsClient, topicArn)
 	handler := application.NewDispactherHandler(dispatcher)
 	adapter := newHttpAdapter(handler)
 

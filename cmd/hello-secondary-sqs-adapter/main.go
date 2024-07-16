@@ -43,12 +43,12 @@ func (h *sqsAdapter) adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 			return logAndReturnError("Failed to unmarshal message body", err)
 		}
 
-		input := application.DispactherInputMsg{}
+		input := application.DispactherHandlerInputMsg{}
 		if err := json.Unmarshal([]byte(body.Message), &input); err != nil {
 			return logAndReturnError("Failed to unmarshal message content", err)
 		}
 
-		helloHandlerMsg := application.HandlerInputMsg{
+		helloHandlerMsg := application.HelloHandleInputMsg{
 			Name:   input.Message,
 			Suffix: "from secondary",
 		}
