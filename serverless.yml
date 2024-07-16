@@ -6,6 +6,7 @@ plugins:
 
 custom:
   localstack:
+    endpointUrl: http://localstack:4566
     stages:
       - local
     autostart: true
@@ -17,25 +18,80 @@ custom:
   go:
     supportedRuntimes: ["provided.al2"]
     buildProvidedRuntimeAsBootstrap: true
+  aws:
+    accountId: "000000000000"
+    dnsRoute: localhost.localstack.cloud:4566
 
 provider:
   name: aws
-  region: 'us-east-1'
+  region: "us-east-1"
   stage: ${opt:stage, 'local'}
   apiName: custom-api-name
   environment:
-    APP_ENV: ${opt:stage, self:provider.stage}
+    AWS_ENDPOINT_URL: ${self:custom.localstack.endpointUrl, 'http://localstack:4566'}
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID, 'test'}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY, 'test'}
+    AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID, '000000000000'}
+    AWS_DEPLOY_REGION: ${self:provider.region, 'us-east-1'}
+    AWS_SNS_HELLO_TOPIC: "arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic"
+    AWS_SQS_HELLO_QUEUE: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue"
+    AWS_SQS_HELLO_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-dlq"
+    AWS_SQS_HELLO_SECONDARY_QUEUE: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue"
+    AWS_SQS_HELLO_SECONDARY_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-dlq"
   memorySize: 128
   apiGateway:
     shouldStartNameWithService: true
 
+resources:
+  Resources:
+    # HelloDLQ:
+    #   Type: AWS::SQS::Queue
+    #   Properties:
+    #     QueueName: ${self:service}-${self:provider.stage}-hello-dlq
+    HelloQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-hello-queue
+        # RedrivePolicy:
+        #   deadLetterTargetArn: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-dlq
+
+    # HelloSecondaryDLQ:
+    #   Type: AWS::SQS::Queue
+    #   Properties:
+    #     QueueName: ${self:service}-${self:provider.stage}-hello-secondary-dlq
+    HelloSecondaryQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-hello-secondary-queue
+        # RedrivePolicy:
+        #   deadLetterTargetArn: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-dlq
+
+    HelloTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: ${self:service}-${self:provider.stage}-hello-topic
+        TopicName: ${self:service}-${self:provider.stage}-hello-topic
+
+    HelloSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn: arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic
+        Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue
+    HelloSecondarySubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn: arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic
+        Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
+
 functions:
-  hello:
-    handler: cmd/hello/main.go
+  http-hello-broadcaster:
+    handler: cmd/hello-http-adapter/main.go
     runtime: provided.al2
     events:
       - http:
-          path: hello/{name}
+          path: hello-broadcaster/{name}
           method: get
           cors: true
           request:
@@ -43,18 +99,17 @@ functions:
               paths:
                 name: true
 
-  hello-secondary:
-    handler: cmd/hello-secondary/main.go
+  hello:
+    handler: cmd/hello-sqs-adapter/main.go
     runtime: provided.al2
     events:
-      - http:
-          path: hello-secondary/{name}
-          method: get
-          cors: true
-          request:
-            parameters:
-              paths:
-                name: true
+      - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue
+
+  hello-secondary:
+    handler: cmd/hello-secondary-sqs-adapter/main.go
+    runtime: provided.al2
+    events:
+      - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
 
   health-check:
     handler: cmd/health-check/main.go
