@@ -26,11 +26,11 @@ type body struct {
 	SigningCertURL   string `json:"SigningCertURL"`
 }
 
-func (b *body) unmarshal(recordBody string) error {
-	return json.Unmarshal([]byte(recordBody), b)
+func (b *body) unmarshal(recordBody []byte) error {
+	return json.Unmarshal(recordBody, b)
 }
 
-func (b *body) toDispatcherHandlerInputMsg(recordBody string) (application.DispactherHandlerInputMsg, error) {
+func (b *body) toDispatcherHandlerInputMsg(recordBody []byte) (application.DispactherHandlerInputMsg, error) {
 	err := b.unmarshal(recordBody)
 	if err != nil {
 		return application.DispactherHandlerInputMsg{}, err
@@ -54,10 +54,14 @@ func NewSqsAdapter(handler *application.HelloHandler, name string) *sqsAdapter {
 
 func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
+		if len(record.Body) == 0 {
+			return logAndReturnError("Record body is empty", nil)
+		}
+
 		var b body
-		input, err := b.toDispatcherHandlerInputMsg(record.Body)
+		input, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
 		if err != nil {
-			return logAndReturnError("Failed to unmarshal message content", err)
+			return logAndReturnError("Failed to unmarshal message content: "+record.Body, err)
 		}
 
 		helloHandlerMsg := application.HelloHandleInputMsg{
