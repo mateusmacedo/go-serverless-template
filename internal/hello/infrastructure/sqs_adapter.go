@@ -70,7 +70,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 			return h.logAndReturnError(h.logger, "Failed to process record", err)
 		}
 
-		handlerInput := application.HelloHandleInputMsg{
+		handlerInput := application.HelloHandleInput{
 			Name:   dispatcherInput.Message,
 			Suffix: h.name,
 			ID:     record.MessageId,

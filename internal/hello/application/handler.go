@@ -7,13 +7,13 @@ import (
 	"go-sls-template/internal/hello/domain"
 )
 
-type HelloHandleInputMsg struct {
+type HelloHandleInput struct {
 	Name   string `json:"name"`
 	Suffix string `json:"suffix"`
 	ID     string `json:"id"`
 }
 
-type HelloHandleOutputMsg struct {
+type HelloHandleOutput struct {
 	Message string `json:"message"`
 }
 
@@ -29,7 +29,7 @@ func NewHelloHandler(hello domain.Hello, repo domain.MessageRepository) *HelloHa
 	}
 }
 
-func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInputMsg) (HelloHandleOutputMsg, error) {
+func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInput) (HelloHandleOutput, error) {
 	input := domain.HelloInput(struct {
 		Name   string `json:"name"`
 		Suffix string `json:"suffix"`
@@ -47,8 +47,7 @@ func (h *HelloHandler) Handle(ctx context.Context, msg HelloHandleInputMsg) (Hel
 
 	err := h.repository.SaveMessage(ctx, message)
 	if err != nil {
-		return HelloHandleOutputMsg{}, err
+		return HelloHandleOutput{}, err
 	}
-	return HelloHandleOutputMsg(output), nil
-
+	return HelloHandleOutput(output), nil
 }
