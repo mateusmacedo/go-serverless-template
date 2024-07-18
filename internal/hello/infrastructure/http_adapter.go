@@ -34,11 +34,11 @@ func (h *httpAdapter) Adapt(ctx context.Context, request events.APIGatewayProxyR
 		return h.createErrorResponse("Name parameter is missing", 400, nil)
 	}
 
-	msg := application.DispactherHandlerInputMsg{
+	input := application.DispactherHandlerInputMsg{
 		Message: name,
 	}
 
-	err := h.handler.Handle(ctx, msg)
+	err := h.handler.Handle(ctx, input)
 	if err != nil {
 		return h.createErrorResponse("Failed to handle message", 500, err)
 	}

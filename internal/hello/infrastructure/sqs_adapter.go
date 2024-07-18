@@ -65,23 +65,23 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 		}
 
 		var b body
-		input, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
+		dispatcherInput, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
 		if err != nil {
 			return h.logAndReturnError(h.logger, "Failed to process record", err)
 		}
 
-		helloHandlerMsg := application.HelloHandleInputMsg{
-			Name:   input.Message,
+		handlerInput := application.HelloHandleInputMsg{
+			Name:   dispatcherInput.Message,
 			Suffix: h.name,
 			ID:     record.MessageId,
 		}
 
-		output, err := h.handler.Handle(ctx, helloHandlerMsg)
+		handlerOutput, err := h.handler.Handle(ctx, handlerInput)
 		if err != nil {
 			return h.logAndReturnError(h.logger, "Failed to process message", err)
 		}
 
-		h.logger.Info("Message processed successfully", "output", output.Message)
+		h.logger.Info("Message processed successfully", "output", handlerOutput.Message)
 	}
 
 	return nil
