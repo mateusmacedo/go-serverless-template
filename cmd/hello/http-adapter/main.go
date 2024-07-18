@@ -29,8 +29,8 @@ func main() {
 
 	}
 
-	dispatcher := aws.NewSnsDispatcher[application.DispactherHandlerInputMsg](snsClient, topicArn)
-	handler := application.NewDispactherHandler(dispatcher)
+	dispatcher := aws.NewSnsDispatcher[application.DispactherInput](snsClient, topicArn)
+	handler := application.NewDispacther(dispatcher)
 	adapter := infrastructure.NewHttpAdapter(handler, logger)
 
 	lambda.Start(adapter.Adapt)

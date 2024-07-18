@@ -7,21 +7,21 @@ import (
 	"go-sls-template/pkg/application"
 )
 
-type DispactherHandlerInputMsg struct {
+type DispactherInput struct {
 	Message string `json:"message"`
 }
 
-type DispactherHandler struct {
-	dispatcher application.MessageDispatcher[DispactherHandlerInputMsg]
+type Dispacther struct {
+	dispatcher application.MessageDispatcher[DispactherInput]
 }
 
-func NewDispactherHandler(publisher application.MessageDispatcher[DispactherHandlerInputMsg]) *DispactherHandler {
-	return &DispactherHandler{
+func NewDispacther(publisher application.MessageDispatcher[DispactherInput]) *Dispacther {
+	return &Dispacther{
 		dispatcher: publisher,
 	}
 }
 
-func (h DispactherHandler) Handle(ctx context.Context, msg DispactherHandlerInputMsg) error {
+func (h Dispacther) Dispatch(ctx context.Context, msg DispactherInput) error {
 	if msg.Message == "" {
 		return errors.New("message cannot be empty")
 	}

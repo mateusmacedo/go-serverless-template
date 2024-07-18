@@ -10,11 +10,11 @@ import (
 )
 
 type httpAdapter struct {
-	handler *application.DispactherHandler
+	handler *application.Dispacther
 	logger  pkg_app.Logger
 }
 
-func NewHttpAdapter(handler *application.DispactherHandler, logger pkg_app.Logger) *httpAdapter {
+func NewHttpAdapter(handler *application.Dispacther, logger pkg_app.Logger) *httpAdapter {
 	return &httpAdapter{handler: handler, logger: logger}
 }
 
@@ -34,11 +34,11 @@ func (h *httpAdapter) Adapt(ctx context.Context, request events.APIGatewayProxyR
 		return h.createErrorResponse("Name parameter is missing", 400, nil)
 	}
 
-	input := application.DispactherHandlerInputMsg{
+	input := application.DispactherInput{
 		Message: name,
 	}
 
-	err := h.handler.Handle(ctx, input)
+	err := h.handler.Dispatch(ctx, input)
 	if err != nil {
 		return h.createErrorResponse("Failed to handle message", 500, err)
 	}

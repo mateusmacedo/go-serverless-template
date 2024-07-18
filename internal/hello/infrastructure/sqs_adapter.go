@@ -26,14 +26,14 @@ func (b *body) unmarshal(recordBody []byte) error {
 	return json.Unmarshal(recordBody, b)
 }
 
-func (b *body) toDispatcherHandlerInputMsg(recordBody []byte) (application.DispactherHandlerInputMsg, error) {
+func (b *body) toDispatcherHandlerInputMsg(recordBody []byte) (application.DispactherInput, error) {
 	if err := b.unmarshal(recordBody); err != nil {
-		return application.DispactherHandlerInputMsg{}, errors.New("failed to unmarshal body: " + string(recordBody))
+		return application.DispactherInput{}, errors.New("failed to unmarshal body: " + string(recordBody))
 	}
 
-	var input application.DispactherHandlerInputMsg
+	var input application.DispactherInput
 	if err := json.Unmarshal([]byte(b.Message), &input); err != nil {
-		return application.DispactherHandlerInputMsg{}, errors.New("failed to unmarshal message content: " + b.Message)
+		return application.DispactherInput{}, errors.New("failed to unmarshal message content: " + b.Message)
 	}
 
 	return input, nil
