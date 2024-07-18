@@ -11,11 +11,6 @@ import (
 	pkg_app "go-sls-template/pkg/application"
 )
 
-func logAndReturnError(logger pkg_app.Logger, message string, err error) error {
-	logger.Error(message, err)
-	return err
-}
-
 type body struct {
 	Type             string `json:"Type"`
 	MessageId        string `json:"MessageId"`
@@ -58,16 +53,21 @@ func NewSqsAdapter(handler *application.HelloHandler, name string, logger pkg_ap
 	}
 }
 
+func (h *sqsAdapter) logAndReturnError(logger pkg_app.Logger, message string, err error) error {
+	logger.Error(message, err)
+	return err
+}
+
 func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		if len(record.Body) == 0 {
-			return logAndReturnError(h.logger, "Record body is empty", nil)
+			return h.logAndReturnError(h.logger, "Record body is empty", nil)
 		}
 
 		var b body
 		input, err := b.toDispatcherHandlerInputMsg([]byte(record.Body))
 		if err != nil {
-			return logAndReturnError(h.logger, "Failed to process record", err)
+			return h.logAndReturnError(h.logger, "Failed to process record", err)
 		}
 
 		helloHandlerMsg := application.HelloHandleInputMsg{
@@ -78,7 +78,7 @@ func (h *sqsAdapter) Adapt(ctx context.Context, sqsEvent events.SQSEvent) error 
 
 		output, err := h.handler.Handle(ctx, helloHandlerMsg)
 		if err != nil {
-			return logAndReturnError(h.logger, "Failed to process message", err)
+			return h.logAndReturnError(h.logger, "Failed to process message", err)
 		}
 
 		h.logger.Info("Message processed successfully", "output", output.Message)
