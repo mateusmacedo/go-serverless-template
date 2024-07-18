@@ -11,7 +11,6 @@ import (
 	"go-sls-template/internal/hello/application"
 	"go-sls-template/internal/hello/domain"
 	"go-sls-template/internal/hello/infrastructure"
-	"go-sls-template/pkg/infrastructure/aws"
 	"go-sls-template/pkg/infrastructure/log"
 )
 
@@ -29,7 +28,7 @@ func main() {
 	}
 
 	service := domain.NewHello()
-	repository := aws.NewDynamoDBRepository(dynamoClient, tableName)
+	repository := infrastructure.NewDynamoDBRepository(dynamoClient, tableName)
 	handler := application.NewHelloHandler(service, repository)
 	adapter := infrastructure.NewSqsAdapter(handler, "from hello-secondary-sqs-adapter", logger)
 
