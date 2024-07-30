@@ -39,19 +39,21 @@ provider:
   iam:
     role:
       statements:
-        - Effect: "Allow"
+        - Effect: Allow
           Action:
             - "sqs:SendMessage"
             - "sqs:ReceiveMessage"
             - "sqs:DeleteMessage"
+            - "sqs:GetQueueAttributes"
+            - "sqs:GetQueueUrl"
           Resource:
             - {"Fn::GetAtt": ["HelloQueue", "Arn"]}
             - {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
-        - Effect: "Allow"
+        - Effect: Allow
           Action:
             - "sns:Publish"
           Resource: {"Ref": "HelloTopic"}
-        - Effect: "Allow"
+        - Effect: Allow
           Action:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
@@ -76,10 +78,42 @@ resources:
       Properties:
         QueueName: ${self:custom.helloQueueName}
 
+    HelloQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref HelloQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action:
+                - "sqs:SendMessage"
+                - "sqs:ReceiveMessage"
+                - "sqs:DeleteMessage"
+              Resource: !GetAtt HelloQueue.Arn
+
     HelloSecondaryQueue:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: ${self:custom.helloSecondaryQueueName}
+
+    HelloSecondaryQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref HelloSecondaryQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action:
+                - "sqs:SendMessage"
+                - "sqs:ReceiveMessage"
+                - "sqs:DeleteMessage"
+              Resource: !GetAtt HelloSecondaryQueue.Arn
 
     HelloTopic:
       Type: AWS::SNS::Topic
@@ -92,14 +126,14 @@ resources:
       Properties:
         Protocol: sqs
         TopicArn: {"Ref": "HelloTopic"}
-        Endpoint: {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+        Endpoint: !GetAtt HelloQueue.Arn
 
     HelloSecondarySubscription:
       Type: AWS::SNS::Subscription
       Properties:
         Protocol: sqs
         TopicArn: {"Ref": "HelloTopic"}
-        Endpoint: {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+        Endpoint: !GetAtt HelloSecondaryQueue.Arn
 
     HelloTable:
       Type: AWS::DynamoDB::Table
@@ -120,11 +154,9 @@ functions:
   helloHttp:
     handler: cmd/hello/http-adapter/main.go
     runtime: provided.al2
-    environment:
-      SNS_TOPIC: ${self:provider.environment.SNS_TOPIC}
     events:
-      - http:
-          path: hello/{name}
+      - httpApi:
+          path: /hello/{name}
           method: get
           cors: true
           request:
@@ -137,7 +169,7 @@ functions:
     runtime: provided.al2
     events:
       - sqs:
-          arn: {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+          arn: !GetAtt HelloQueue.Arn
           batchSize: 1
 
   helloSecondary:
@@ -145,7 +177,7 @@ functions:
     runtime: provided.al2
     events:
       - sqs:
-          arn: {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+          arn: !GetAtt HelloSecondaryQueue.Arn
           batchSize: 1
 
 outputs:
