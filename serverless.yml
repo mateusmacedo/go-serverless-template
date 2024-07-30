@@ -6,66 +6,41 @@ plugins:
 
 custom:
   localstack:
-    endpointUrl: http://localstack:4566
     stages:
       - local
     autostart: true
-    docker:
-      compose_file: docker/compose.yaml
     lambda:
       mount_code: true
     debug: true
   go:
     supportedRuntimes: ["provided.al2"]
     buildProvidedRuntimeAsBootstrap: true
-  aws:
-    accountId: "000000000000"
-    dnsRoute: localhost.localstack.cloud:4566
 
 provider:
   name: aws
   region: "us-east-1"
   stage: ${opt:stage, 'local'}
-  apiName: custom-api-name
+  apiName: ${self:service}-${self:provider.stage}
   environment:
-    AWS_ENDPOINT_URL: ${self:custom.localstack.endpointUrl, 'http://localstack:4566'}
-    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID, 'test'}
-    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY, 'test'}
-    AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID, '000000000000'}
-    AWS_DEPLOY_REGION: ${self:provider.region, 'us-east-1'}
-    AWS_SNS_HELLO_TOPIC: "arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic"
-    AWS_SQS_HELLO_QUEUE: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue"
-    AWS_SQS_HELLO_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-dlq"
-    AWS_SQS_HELLO_SECONDARY_QUEUE: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue"
-    AWS_SQS_HELLO_SECONDARY_DLQ: "arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-dlq"
-    AWS_DYNAMODB_TABLE_NAME: "${self:service}-${self:provider.stage}-hello-table"
+    AWS_SNS_HELLO_TOPIC: {"Ref": "HelloTopic"}
+    AWS_SQS_HELLO_QUEUE: {"Ref": "HelloQueue"}
+    AWS_SQS_HELLO_SECONDARY_QUEUE: {"Ref": "HelloSecondaryQueue"}
+    AWS_DYNAMODB_TABLE_NAME: {"Ref": "HelloTable"}
   memorySize: 128
   apiGateway:
     shouldStartNameWithService: true
 
 resources:
   Resources:
-    # HelloDLQ:
-    #   Type: AWS::SQS::Queue
-    #   Properties:
-    #     QueueName: ${self:service}-${self:provider.stage}-hello-dlq
     HelloQueue:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: ${self:service}-${self:provider.stage}-hello-queue
-        # RedrivePolicy:
-        #   deadLetterTargetArn: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-dlq
 
-    # HelloSecondaryDLQ:
-    #   Type: AWS::SQS::Queue
-    #   Properties:
-    #     QueueName: ${self:service}-${self:provider.stage}-hello-secondary-dlq
     HelloSecondaryQueue:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: ${self:service}-${self:provider.stage}-hello-secondary-queue
-        # RedrivePolicy:
-        #   deadLetterTargetArn: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-dlq
 
     HelloTopic:
       Type: AWS::SNS::Topic
@@ -77,14 +52,15 @@ resources:
       Type: AWS::SNS::Subscription
       Properties:
         Protocol: sqs
-        TopicArn: arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic
-        Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue
+        TopicArn: {"Ref": "HelloTopic"}
+        Endpoint: {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+
     HelloSecondarySubscription:
       Type: AWS::SNS::Subscription
       Properties:
         Protocol: sqs
-        TopicArn: arn:aws:sns:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-topic
-        Endpoint: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
+        TopicArn: {"Ref": "HelloTopic"}
+        Endpoint: {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
 
     HelloTable:
       Type: AWS::DynamoDB::Table
@@ -104,7 +80,7 @@ resources:
         TableName: ${self:service}-${self:provider.stage}-hello-table
 
 functions:
-  hello-http:
+  helloHttp:
     handler: cmd/hello/http-adapter/main.go
     runtime: provided.al2
     events:
@@ -117,14 +93,18 @@ functions:
               paths:
                 name: true
 
-  hello-primary:
+  helloPrimary:
     handler: cmd/hello/primary-sqs-adapter/main.go
     runtime: provided.al2
     events:
-      - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-queue
+      - sqs:
+          arn:
+            {"Fn::GetAtt": ["HelloQueue", "Arn"]}
 
-  hello-secondary:
+  helloSecondary:
     handler: cmd/hello/secondary-sqs-adapter/main.go
     runtime: provided.al2
     events:
-      - sqs: arn:aws:sqs:${self:provider.region}:${self:custom.aws.accountId}:${self:service}-${self:provider.stage}-hello-secondary-queue
+      - sqs:
+          arn:
+            {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
