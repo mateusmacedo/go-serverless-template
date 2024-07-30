@@ -103,7 +103,7 @@ resources:
 
     HelloTable:
       Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
+      DeletionPolicy: Delete
       Properties:
         AttributeDefinitions:
           - AttributeName: id
@@ -138,6 +138,7 @@ functions:
     events:
       - sqs:
           arn: {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+          batchSize: 1
 
   helloSecondary:
     handler: cmd/hello/secondary-sqs-adapter/main.go
@@ -145,6 +146,7 @@ functions:
     events:
       - sqs:
           arn: {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+          batchSize: 1
 
 outputs:
   helloQueueUrl:
