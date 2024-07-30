@@ -29,6 +29,15 @@ provider:
   memorySize: 128
   apiGateway:
     shouldStartNameWithService: true
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "sqs:*"
+            - "sns:*"
+            - "dynamodb:*"
+          Resource: "*"
 
 resources:
   Resources:
