@@ -16,16 +16,16 @@ import (
 
 func main() {
 	logger, _ := log.NewZapLogger()
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		logger.Error("Error loading AWS config", err)
 	}
 
 	snsClient := sns.NewFromConfig(cfg)
 
-	topicArn := os.Getenv("AWS_SNS_HELLO_TOPIC")
+	topicArn := os.Getenv("SNS_TOPIC")
 	if topicArn == "" {
-		logger.Error("AWS_SNS_HELLO_TOPIC environment variable is not set", nil)
+		logger.Error("SNS_TOPIC environment variable is not set", nil)
 
 	}
 

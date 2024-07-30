@@ -5,6 +5,14 @@ plugins:
   - serverless-go-plugin
 
 custom:
+  serviceName: go-serverless-template
+  stage: ${opt:stage, 'local'}
+  region: us-east-1
+  helloQueueName: ${self:custom.serviceName}-${self:custom.stage}-hello-queue
+  helloSecondaryQueueName: ${self:custom.serviceName}-${self:custom.stage}-hello-secondary-queue
+  helloTopicName: ${self:custom.serviceName}-${self:custom.stage}-hello-topic
+  helloTableName: ${self:custom.serviceName}-${self:custom.stage}-hello-table
+
   localstack:
     stages:
       - local
@@ -12,20 +20,19 @@ custom:
     lambda:
       mount_code: true
     debug: true
+
   go:
     supportedRuntimes: ["provided.al2"]
     buildProvidedRuntimeAsBootstrap: true
 
 provider:
   name: aws
-  region: "us-east-1"
-  stage: ${opt:stage, 'local'}
-  apiName: ${self:service}-${self:provider.stage}
+  region: ${self:custom.region}
+  stage: ${self:custom.stage}
+  apiName: ${self:custom.serviceName}-${self:provider.stage}
   environment:
-    AWS_SNS_HELLO_TOPIC: {"Ref": "HelloTopic"}
-    AWS_SQS_HELLO_QUEUE: {"Ref": "HelloQueue"}
-    AWS_SQS_HELLO_SECONDARY_QUEUE: {"Ref": "HelloSecondaryQueue"}
-    AWS_DYNAMODB_TABLE_NAME: {"Ref": "HelloTable"}
+    SNS_TOPIC: {"Ref": "HelloTopic"}
+    DYNAMODB_TABLE: ${self:custom.helloTableName}
   memorySize: 128
   apiGateway:
     shouldStartNameWithService: true
@@ -34,28 +41,51 @@ provider:
       statements:
         - Effect: "Allow"
           Action:
-            - "sqs:*"
-            - "sns:*"
-            - "dynamodb:*"
-          Resource: "*"
+            - "sqs:SendMessage"
+            - "sqs:ReceiveMessage"
+            - "sqs:DeleteMessage"
+          Resource:
+            - {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+            - {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+        - Effect: "Allow"
+          Action:
+            - "sns:Publish"
+          Resource: {"Ref": "HelloTopic"}
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:Query"
+          Resource: {"Fn::GetAtt": ["HelloTable", "Arn"]}
+  logs:
+    restApi:
+      executionLogging: true
+      level: INFO
+      fullExecutionData: true
+    httpApi:
+      accessLogging: true
+      executionLogging: true
+    frameworks:
+      lambda:
+        level: INFO
 
 resources:
   Resources:
     HelloQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: ${self:service}-${self:provider.stage}-hello-queue
+        QueueName: ${self:custom.helloQueueName}
 
     HelloSecondaryQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: ${self:service}-${self:provider.stage}-hello-secondary-queue
+        QueueName: ${self:custom.helloSecondaryQueueName}
 
     HelloTopic:
       Type: AWS::SNS::Topic
       Properties:
-        DisplayName: ${self:service}-${self:provider.stage}-hello-topic
-        TopicName: ${self:service}-${self:provider.stage}-hello-topic
+        DisplayName: ${self:custom.helloTopicName}
+        TopicName: ${self:custom.helloTopicName}
 
     HelloSubscription:
       Type: AWS::SNS::Subscription
@@ -76,22 +106,22 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: id
+          - AttributeName: id
             AttributeType: S
         KeySchema:
-          -
-            AttributeName: id
+          - AttributeName: id
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:service}-${self:provider.stage}-hello-table
+        TableName: ${self:custom.helloTableName}
 
 functions:
   helloHttp:
     handler: cmd/hello/http-adapter/main.go
     runtime: provided.al2
+    environment:
+      SNS_TOPIC: ${self:provider.environment.SNS_TOPIC}
     events:
       - http:
           path: hello/{name}
@@ -107,13 +137,27 @@ functions:
     runtime: provided.al2
     events:
       - sqs:
-          arn:
-            {"Fn::GetAtt": ["HelloQueue", "Arn"]}
+          arn: {"Fn::GetAtt": ["HelloQueue", "Arn"]}
 
   helloSecondary:
     handler: cmd/hello/secondary-sqs-adapter/main.go
     runtime: provided.al2
     events:
       - sqs:
-          arn:
-            {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+          arn: {"Fn::GetAtt": ["HelloSecondaryQueue", "Arn"]}
+
+outputs:
+  helloQueueUrl:
+    Value:
+      Ref: HelloQueue
+  helloSecondaryQueueUrl:
+    Value:
+      Ref: HelloSecondaryQueue
+  helloTopicArn:
+    Value:
+      Ref: HelloTopic
+  helloTableArn:
+    Value:
+      Fn::GetAtt:
+        - HelloTable
+        - Arn

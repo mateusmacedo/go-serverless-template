@@ -16,15 +16,15 @@ import (
 
 func main() {
 	logger, _ := log.NewZapLogger()
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		logger.Error("Error loading AWS config", err)
 	}
 
 	dynamoClient := dynamodb.NewFromConfig(cfg)
-	tableName := os.Getenv("AWS_DYNAMODB_TABLE_NAME")
+	tableName := os.Getenv("DYNAMODB_TABLE")
 	if tableName == "" {
-		logger.Error("AWS_DYNAMODB_TABLE_NAME environment variable is not set", nil)
+		logger.Error("DYNAMODB_TABLE environment variable is not set", nil)
 	}
 
 	service := domain.NewHello()
