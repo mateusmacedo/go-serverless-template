@@ -1,6 +1,8 @@
 {
   "devDependencies": {
+    "serverless": "^4.1.19",
     "serverless-go-plugin": "^2.4.0",
-    "serverless-localstack": "^1.2.1"
+    "serverless-localstack": "^1.2.1",
+    "glob": "^7.1.6"
   }
 }
