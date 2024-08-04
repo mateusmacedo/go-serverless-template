@@ -155,7 +155,7 @@ functions:
     handler: cmd/hello/http-adapter/main.go
     runtime: provided.al2
     events:
-      - httpApi:
+      - http:
           path: /hello/{name}
           method: get
           cors: true
